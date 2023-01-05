@@ -53,39 +53,58 @@ def load_data():
 df = load_data()
 
 
-# TODO: make plots using `df`
+# TODO: put parameters into sidebar
 
+with st.sidebar:
+    st.info(':information_source: click on the cross to close the sidebar')
+
+    do_something = st.button('Click me!', ['a', 'b', 'c'])
+    st.caption("Use this to define the area of focus")
+
+    choice = st.radio('One choice', ['a', 'b', 'c'])
+
+    choice = st.selectbox('One choice', ['a', 'b', 'c'])
+    st.caption("Use this to define the area of focus")
+
+    choices = st.multiselect('Pick many', ['a', 'b', 'c', 'd', 'e'])
+    st.caption("Use this to define the area of focus")
+
+    start_date = st.date_input('Start date')
+    st.caption("Use this to define the area of focus")
+
+    hour_to_filter = st.slider('hour', 0, 23, 17)  # min: 0h, max: 23h, default: 17h
+    st.caption("Use this to define the area of focus")
 
 
 st.header('Parameters')
 st.caption("Use this to define the area of focus")
 st.info(':information_source:  here it is :shark: ::')
 st.warning(':warning:  watch out!')
-with st.container():
-    col1, col2, col3, col4, col5, col6 = st.columns((1,1,1,1,1,1))
-
-    with col1:
-        do_something = st.button('Click me!', ['a', 'b', 'c'])
-        st.caption("Use this to define the area of focus")
-
-    with col2:
-        choice = st.radio('One choice', ['a', 'b', 'c'])
-
-    with col3:
-        choice = st.selectbox('One choice', ['a', 'b', 'c'])
-        st.caption("Use this to define the area of focus")
-
-    with col4:
-        choices = st.multiselect('Pick many', ['a', 'b', 'c', 'd', 'e'])
-        st.caption("Use this to define the area of focus")
-
-    with col5:
-        start_date = st.date_input('Start date')
-        st.caption("Use this to define the area of focus")
-
-    with col6:
-        hour_to_filter = st.slider('hour', 0, 23, 17)  # min: 0h, max: 23h, default: 17h
-        st.caption("Use this to define the area of focus")
+# with st.container():
+#     col1, col2, col3, col4, col5, col6 = st.columns((1,1,1,1,1,1))
+#
+#     with col1:
+#         do_something = st.button('Click me!', ['a', 'b', 'c'])
+#         st.caption("Use this to define the area of focus")
+#
+#     with col2:
+#         choice = st.radio('One choice', ['a', 'b', 'c'])
+#
+#     with col3:
+#         choice = st.selectbox('One choice', ['a', 'b', 'c'])
+#         st.caption("Use this to define the area of focus")
+#
+#     with col4:
+#         choices = st.multiselect('Pick many', ['a', 'b', 'c', 'd', 'e'])
+#         st.caption("Use this to define the area of focus")
+#
+#     with col5:
+#         start_date = st.date_input('Start date')
+#         st.caption("Use this to define the area of focus")
+#
+#     with col6:
+#         hour_to_filter = st.slider('hour', 0, 23, 17)  # min: 0h, max: 23h, default: 17h
+#         st.caption("Use this to define the area of focus")
 
 
 st.header('RoAS')
@@ -106,6 +125,26 @@ with st.container():
                 I rolled actual dice for these, so they're *guaranteed* to
                 be random.
             """)
+
+        import plotly.express as px
+        #import streamlit as st
+
+        #df = px.data.gapminder()
+
+        fig = px.scatter(
+            df,#.query("year==2007"),
+            x="spend",
+            y="revenue",
+            #size="pop",
+            color="channel",
+            #hover_name="country",
+            #log_x=True,
+            size_max=60,
+        )
+
+        # Use the Streamlit theme.
+        # This is the default. So you can also omit the theme argument.
+        st.plotly_chart(fig, theme="streamlit", use_container_width=True)
 
 st.header('Response curves')
 st.caption("Use this to define the area of focus")
