@@ -35,7 +35,7 @@ def load_data():
     for model_id in ['UK CT.com', 'UK B&M']:
         for optimal_model_id in ['1_100_1', '2_323_2', '4_444_1', '5_455_5', '6_666_6', '7_777_7', '8_888_8',
                                  '9_099_0']:
-            for date in [(datetime(2022, 1, 1) + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(0, 365)]:
+            for date in [datetime(2022, 1, 1) + timedelta(days=i) for i in range(0, 365)]:
                 for channel in ['YouTube', 'TikTok', 'Bing', 'TV']:
                     spend = np.random.gamma(20, 5, 1)[0]
                     revenue = np.random.gamma(25, 5, 1)[0]
@@ -55,29 +55,41 @@ df = load_data()
 
 # TODO: put parameters into sidebar
 
+
 with st.sidebar:
     st.info(':information_source: click on the cross to close the sidebar')
 
-    do_something = st.button('Click me!', ['a', 'b', 'c'])
-    st.caption("Use this to define the area of focus")
+    st.header('Parameters')
+    st.caption("Use this to define the focus of the dashboard")
 
-    choice = st.radio('One choice', ['a', 'b', 'c'])
-
-    choice = st.selectbox('One choice', ['a', 'b', 'c'])
-    st.caption("Use this to define the area of focus")
-
-    choices = st.multiselect('Pick many', ['a', 'b', 'c', 'd', 'e'])
-    st.caption("Use this to define the area of focus")
-
-    start_date = st.date_input('Start date')
-    st.caption("Use this to define the area of focus")
-
-    hour_to_filter = st.slider('hour', 0, 23, 17)  # min: 0h, max: 23h, default: 17h
-    st.caption("Use this to define the area of focus")
+    # do_something = st.button('Click me!', ['a', 'b', 'c'])
+    # st.caption("Use this to define the area of focus")
+    #
+    # choice = st.radio('One choice', ['a', 'b', 'c'])
 
 
-st.header('Parameters')
-st.caption("Use this to define the area of focus")
+    CHANNEL = st.selectbox('Channel of focus', df['channel'].unique())
+    #st.caption("Use this to define the area of focus")
+
+    # DATE_START, DATE_END = st.date_input('Date range', value=(df['date'].min(), df['date'].max()))
+
+    with st.container():
+        col1, col2 = st.columns((1,1))
+
+        with col1:
+            DATE_START = st.date_input('Start date', value=df['date'].min())
+
+        with col2:
+            DATE_END = st.date_input('End date', value=df['date'].max())
+
+    CONFIDENCE = st.slider('Confidence', 0, 100, 95)
+    #st.caption("Use this to define the area of focus")
+
+    if st.checkbox('Exclude pareto models'):
+        MODELS_TO_EXCLUDE = st.multiselect('Exclude pareto models', df['optimal_model_id'].unique())
+        # st.caption("Use this to define the area of focus")
+
+
 st.info(':information_source:  here it is :shark: ::')
 st.warning(':warning:  watch out!')
 # with st.container():
