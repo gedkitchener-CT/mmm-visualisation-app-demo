@@ -23,7 +23,7 @@ import streamlit as st
 from matplotlib import pyplot as plt
 
 # Page title
-st.set_page_config(layout="wide", page_title="CT MMM Results - Channel one-pager", page_icon=":circled_m::circled_m::circled_m:")
+st.set_page_config(layout="wide", page_title="CT MMM Results - Channel one-pager", page_icon=":m::m::m:")
 
 
 # LOAD DATA ONCE

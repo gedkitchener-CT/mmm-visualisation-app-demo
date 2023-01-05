@@ -1,5 +1,6 @@
-streamlit==1.11.1
-pydeck==0.7.1
-protobuf==3.19.5
+altair==4.2.0
+matplotlib==3.5.3
+numpy==1.21.6
 pandas==1.3.5
-altair
+pydeck==0.7.1
+streamlit==1.11.1
