@@ -27,10 +27,24 @@ st.set_page_config(layout="wide", page_title="NYC Ridesharing Demo", page_icon="
 # LOAD DATA ONCE
 @st.experimental_singleton
 def load_data():
-    df = pd.read_csv(
-        "simulated_data.csv",
-        parse_dates=["date"],  # set as datetime instead of converting after the fact
-    )
+    from datetime import datetime, timedelta
+    import pandas as pd
+    data = []
+    for model_id in ['UK CT.com', 'UK B&M']:
+        for optimal_model_id in ['1_100_1', '2_323_2', '4_444_1', '5_455_5', '6_666_6', '7_777_7', '8_888_8',
+                                 '9_099_0']:
+            for date in [(datetime(2022, 1, 1) + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(0, 365)]:
+                for channel in ['YouTube', 'TikTok', 'Bing', 'TV']:
+                    spend = np.random.gamma(20, 5, 1)[0]
+                    revenue = np.random.gamma(25, 5, 1)[0]
+                    data.append([model_id, optimal_model_id, channel, date, spend, revenue])
+    df = pd.DataFrame(data=data, columns=['model_id', 'optimal_model_id', 'channel', 'date', 'spend', 'revenue'])
+    df = df.sort_values(by=['model_id', 'optimal_model_id', 'channel', 'date'])
+    # df.to_csv('~/Desktop/roas-toy-data.csv', index=False)
+    # df = pd.read_csv(
+    #     "simulated_data.csv",
+    #     parse_dates=["date"],  # set as datetime instead of converting after the fact
+    # )
 
     return df
 
@@ -38,6 +52,7 @@ df = load_data()
 
 
 # TODO: make plots using `df`
+st.header('MMM Results')
 st.dataframe(df)
 
 # # FUNCTION FOR AIRPORT MAPS
