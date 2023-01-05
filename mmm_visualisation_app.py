@@ -20,9 +20,11 @@ import numpy as np
 import pandas as pd
 import pydeck as pdk
 import streamlit as st
+from matplotlib import pyplot as plt
 
-# SETTING PAGE CONFIG TO WIDE MODE AND ADDING A TITLE AND FAVICON
-st.set_page_config(layout="wide", page_title="NYC Ridesharing Demo", page_icon=":taxi:")
+# Page title
+st.set_page_config(layout="wide", page_title="CT MMM Results - Channel one-pager", page_icon=":circled_m::circled_m::circled_m:")
+
 
 # LOAD DATA ONCE
 @st.experimental_singleton
@@ -52,8 +54,77 @@ df = load_data()
 
 
 # TODO: make plots using `df`
-st.header('MMM Results')
-st.dataframe(df)
+
+
+
+st.header('Parameters')
+st.caption("Use this to define the area of focus")
+st.info(':information_source:  here it is :shark: ::')
+st.warning(':warning:  watch out!')
+with st.container():
+    col1, col2, col3, col4, col5, col6 = st.columns((1,1,1,1,1,1))
+
+    with col1:
+        do_something = st.button('Click me!', ['a', 'b', 'c'])
+        st.caption("Use this to define the area of focus")
+
+    with col2:
+        choice = st.radio('One choice', ['a', 'b', 'c'])
+
+    with col3:
+        choice = st.selectbox('One choice', ['a', 'b', 'c'])
+        st.caption("Use this to define the area of focus")
+
+    with col4:
+        choices = st.multiselect('Pick many', ['a', 'b', 'c', 'd', 'e'])
+        st.caption("Use this to define the area of focus")
+
+    with col5:
+        start_date = st.date_input('Start date')
+        st.caption("Use this to define the area of focus")
+
+    with col6:
+        hour_to_filter = st.slider('hour', 0, 23, 17)  # min: 0h, max: 23h, default: 17h
+        st.caption("Use this to define the area of focus")
+
+
+st.header('RoAS')
+st.caption("Use this to define the area of focus")
+with st.container():
+    col1, col2 = st.columns((3,2))
+
+    with col1:
+        st.write("Lorem lorem lorem")
+        if st.checkbox('I will show something...'):
+            st.write('Here I am!')
+
+    with col2:
+        st.subheader('Raw data')
+        with st.expander("See explanation"):
+            st.write("""
+                The chart above shows some numbers I picked for you.
+                I rolled actual dice for these, so they're *guaranteed* to
+                be random.
+            """)
+
+st.header('Response curves')
+st.caption("Use this to define the area of focus")
+with st.container():
+    col1, col2 = st.columns((3,2))
+
+    with col1:
+        st.subheader('CT.com model')
+
+    with col2:
+        st.subheader('B&M model')
+
+st.header('Carry-over effect')
+st.caption("Use this to define the area of focus")
+with st.container():
+    arr = np.random.normal(1, 1, size=100)
+    fig, ax = plt.subplots()
+    ax.hist(arr, bins=20)
+    st.pyplot(fig)
 
 # # FUNCTION FOR AIRPORT MAPS
 # def map(data, lat, lon, zoom):
