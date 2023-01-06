@@ -23,6 +23,9 @@ import pydeck as pdk
 import streamlit as st
 from matplotlib import pyplot as plt
 import plotly.express as px
+import plotly.figure_factory as ff
+
+np.random.seed(42)
 
 # Helpers
 def q05(x): return x.quantile(0.05, interpolation='linear') # 5th Percentile
@@ -51,8 +54,7 @@ def load_data():
         for date in [datetime(2022, 1, 1) + timedelta(days=i) for i in range(0, 365)]:
             for channel in ['YouTube', 'TikTok', 'Bing', 'TV']:
                 spend = np.random.gamma(len(channel), 5, 1)[0]
-                for optimal_model_id in ['1_111_1', '2_222_2', '3_333_3', '4_444_4', '5_555_5', '6_666_6',
-                                         '7_777_7', '8_888_8', '9_999_9']:
+                for optimal_model_id in [f'1_111_{i}' for i in range(1, 50)]:
                     revenue = np.random.gamma(25, 5, 1)[0]
                     data.append([model_id, optimal_model_id, channel, date, spend, revenue])
     df = pd.DataFrame(data=data, columns=['model_id', 'optimal_model_id', 'channel', 'date', 'spend', 'revenue'])
@@ -183,7 +185,6 @@ def format_number(number):
 
 st.header('RoAS')
 
-st.subheader('At a glance')
 col1, col2, col3, col4 = st.columns((1, 1, 1, 3))
 with col1:
     st.metric(label="Spend", value=format_number(df_agg['spend_sum'].sum()), delta=34)
@@ -258,20 +259,20 @@ with col2:
     )
 
 
-with st.container():
-    col1, col2 = st.columns((2,1))
-
-    with col1:
-        with st.container():
-            st.subheader('RoAS Time Series')
-        with st.container():
-            st.subheader('Raw data')
-            with st.expander("See explanation"):
-                st.write("""
-                    The chart above shows some numbers I picked for you.
-                    I rolled actual dice for these, so they're *guaranteed* to
-                    be random.
-                """)
+# with st.container():
+#     col1, col2 = st.columns((2,1))
+#
+#     with col1:
+#         with st.container():
+#             st.subheader('RoAS Time Series')
+#         with st.container():
+#             st.subheader('Raw data')
+#             with st.expander("See explanation"):
+#                 st.write("""
+#                     The chart above shows some numbers I picked for you.
+#                     I rolled actual dice for these, so they're *guaranteed* to
+#                     be random.
+#                 """)
 
             # do_something = st.button(f'Download {CADENCE} data')
             # if do_something:
@@ -283,26 +284,161 @@ with st.container():
 
         #df = px.data.gapminder()
 
+@st.experimental_singleton
+def generate_simulated_response_curves():
+    data = []
+    investment = np.linspace(0,1000,101)
+    for model_id in ['CT.com', 'B&M']:
+        for channel in ['YouTube', 'TikTok', 'Bing', 'TV']:
+            for optimal_model_id in [f'1_111_{i}' for i in range(1, 50)]:
+                n = np.random.gamma(10.0, 0.02, 1)
+                A = np.random.gamma(50, 5, 1)
+                for x in investment:
+
+                    return_ = A * (x**n)
+                    data.append([model_id, optimal_model_id, channel, x, return_[0]])
+
+    df = pd.DataFrame(data=data, columns=['model_id', 'optimal_model_id', 'channel', 'investment', 'return'])
+    df['RoAS'] = df['return'] / df['investment']
+    df = df.sort_values(by=['model_id', 'optimal_model_id', 'channel', 'investment'])
+    return df
+
+df_response_curves = generate_simulated_response_curves()
+
+# Given options in sidebar, filter and aggregate the data accordingly
+#  1. Keep selected model
+df_response_curves = df_response_curves[df_response_curves['model_id']==MODEL]
+#  2. Keep selected channel
+df_response_curves = df_response_curves[df_response_curves['channel']==CHANNEL]
+#  3. Exclude selected models
+df_response_curves = df_response_curves[~df_response_curves['optimal_model_id'].isin(MODELS_TO_EXCLUDE)]
 
 
 st.header('Response curves')
-st.caption("Use this to define the area of focus")
+
+#st.caption("Use this to define the area of focus")
 with st.container():
+    RESPONSE_CURVE_METRIC = st.radio('Metric to display in response curves', ('return', 'RoAS'), 0)
+
     col1, col2 = st.columns((3,2))
 
     with col1:
-        st.subheader('CT.com model')
+        st.subheader('Return-investment curve')
+
+        fig = px.line(
+            df_response_curves,
+            x="investment",
+            y=RESPONSE_CURVE_METRIC,
+            # size="pop",
+            color="optimal_model_id",
+            # hover_name="country",
+            # log_x=True,
+            #opacity=0.5,
+            #size_max=60,
+        )
+        #fig.update_layout(yaxis_range=[0, 15])
+
+        # Use the Streamlit theme.
+        # This is the default. So you can also omit the theme argument.
+        st.plotly_chart(fig, theme="streamlit", use_container_width=True)
+
+        st.info(':information_source:  click on models to add/remove from plot')
 
     with col2:
-        st.subheader('B&M model')
+        st.subheader('Investment level risk')
+        INVESTMENT_LEVEL = st.select_slider("Investment level", options=df_response_curves['investment'].unique(), key="x")
+        #
+        df_investment_level = df_response_curves[df_response_curves['investment']==INVESTMENT_LEVEL]
+        #fig = ff.create_distplot([df_investment_level[RESPONSE_CURVE_METRIC]], group_labels=['xx'], bin_size=df_investment_level[RESPONSE_CURVE_METRIC].max()/20)
+        # #fig = px.histogram(df, x="return", y="return")
+        # st.plotly_chart(fig, theme="streamlit", use_container_width=True)
+        # #fig.show()
+
+
+@st.experimental_singleton
+def generate_simulated_adstock_decay_rates():
+    data = []
+    investment = np.linspace(0,1000,101)
+    for model_id in ['CT.com', 'B&M']:
+        for channel in ['YouTube', 'TikTok', 'Bing', 'TV']:
+            adstock_decay_rate = 1.0 / len(channel)
+            for optimal_model_id in [f'1_111_{i}' for i in range(1, 50)]:
+                theta = np.random.gamma(adstock_decay_rate*10, 0.1, 1)
+                data.append([model_id, optimal_model_id, channel, theta[0]])
+
+    df = pd.DataFrame(data=data, columns=['model_id', 'optimal_model_id', 'channel', 'theta'])
+    df = df.sort_values(by=['model_id', 'optimal_model_id', 'channel'])
+    return df
+
+df_adstock_decay_rates = generate_simulated_adstock_decay_rates()
+
+# Given options in sidebar, filter and aggregate the data accordingly
+#  1. Keep selected model
+df_adstock_decay_rates = df_adstock_decay_rates[df_adstock_decay_rates['model_id']==MODEL]
+#  2. Keep selected channel
+df_adstock_decay_rates = df_adstock_decay_rates[df_adstock_decay_rates['channel']==CHANNEL]
+#  3. Exclude selected models
+df_adstock_decay_rates = df_adstock_decay_rates[~df_adstock_decay_rates['optimal_model_id'].isin(MODELS_TO_EXCLUDE)]
+
+#st.dataframe(df_adstock_decay_rates)
 
 st.header('Carry-over effect')
-st.caption("Use this to define the area of focus")
-with st.container():
-    arr = np.random.normal(1, 1, size=100)
-    fig, ax = plt.subplots()
-    ax.hist(arr, bins=20)
-    st.pyplot(fig)
+
+col1, col2 = st.columns((1, 1))
+
+with col1:
+    st.subheader('Adstock decay')
+
+    fig = ff.create_distplot([df_adstock_decay_rates['theta']], group_labels=['x3'], bin_size=0.05)
+    st.plotly_chart(fig, theme="streamlit", use_container_width=True)
+
+
+with col2:
+    st.subheader('Strength of effect with time')
+
+    days = np.linspace(1, 14, 14)
+    theta = df_adstock_decay_rates['theta'].mean()
+    carry_over_effect = theta**days
+    df = pd.DataFrame(data=zip(days, carry_over_effect), columns=['elapsed_days', 'relative_effect'])
+    #st.dataframe(df)
+
+
+
+    # df['id'] = 'a'
+    #
+    fig = px.line(
+        df,
+        x='elapsed_days',
+        y='relative_effect',
+        # size="pop",
+        #color="id",
+        # hover_name="country",
+        # log_x=True,
+        # opacity=0.5,
+        # size_max=60,
+    )
+    # fig.update_layout(yaxis_range=[0, 15])
+
+    # Use the Streamlit theme.
+    # This is the default. So you can also omit the theme argument.
+    st.plotly_chart(fig, theme="streamlit", use_container_width=True)
+    #
+    # INVESTMENT_LEVEL = st.select_slider("Investment level", options=df_response_curves['investment'].unique(), key="x2")
+    #
+    # df = df_response_curves[df_response_curves['investment'] == INVESTMENT_LEVEL]
+    #
+    #
+    # fig = ff.create_distplot([df[RESPONSE_CURVE_METRIC]], group_labels=['x'],
+    #                          bin_size=df[RESPONSE_CURVE_METRIC].max() / 20)
+    # # fig = px.histogram(df, x="return", y="return")
+    # st.plotly_chart(fig, theme="streamlit", use_container_width=True)
+    # # fig.show()
+
+# with st.container():
+#     arr = np.random.normal(1, 1, size=100)
+#     fig, ax = plt.subplots()
+#     ax.hist(arr, bins=20)
+#     st.pyplot(fig)
 
 # # FUNCTION FOR AIRPORT MAPS
 # def map(data, lat, lon, zoom):
