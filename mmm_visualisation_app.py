@@ -25,6 +25,7 @@ from matplotlib import pyplot as plt
 import plotly.express as px
 import plotly.figure_factory as ff
 
+
 np.random.seed(42)
 
 # Helpers
@@ -284,6 +285,9 @@ with col2:
 
         #df = px.data.gapminder()
 
+# TODO: remove gridlines
+
+# TODO: remove ff plots and go back to plotly express
 @st.experimental_singleton
 def generate_simulated_response_curves():
     data = []
@@ -346,9 +350,16 @@ with st.container():
 
     with col2:
         st.subheader('Investment level risk')
-        INVESTMENT_LEVEL = st.select_slider("Investment level", options=df_response_curves['investment'].unique(), key="x")
+        INVESTMENT_LEVEL = st.select_slider("Investment level", options=df_response_curves['investment'].unique(), value=500, key="x")
         #
         df_investment_level = df_response_curves[df_response_curves['investment']==INVESTMENT_LEVEL]
+
+        # TODO: add bar plot here
+        hist1, bins = np.histogram(df_investment_level[RESPONSE_CURVE_METRIC], bins=20)
+        # df_hist1 = pd.DataFrame(data=hist), columns=['value', 'bin'])
+        # st.write(df_hist1)
+        st.bar_chart(data=hist1)
+
         #fig = ff.create_distplot([df_investment_level[RESPONSE_CURVE_METRIC]], group_labels=['xx'], bin_size=df_investment_level[RESPONSE_CURVE_METRIC].max()/20)
         # #fig = px.histogram(df, x="return", y="return")
         # st.plotly_chart(fig, theme="streamlit", use_container_width=True)
@@ -389,8 +400,16 @@ col1, col2 = st.columns((1, 1))
 with col1:
     st.subheader('Adstock decay')
 
-    fig = ff.create_distplot([df_adstock_decay_rates['theta']], group_labels=['x3'], bin_size=0.05)
-    st.plotly_chart(fig, theme="streamlit", use_container_width=True)
+    # TODO: add bar plot here
+    hist, bins = np.histogram(df_adstock_decay_rates['theta'], bins=np.linspace(0, 1, 21))
+    #df_hist1 = pd.DataFrame(data=hist), columns=['value', 'bin'])
+    #st.write(df_hist1)
+    st.bar_chart(data=hist)
+
+    #print(hist)
+
+    # fig = ff.create_distplot([df_adstock_decay_rates['theta']], group_labels=['x3'], bin_size=0.05)
+    # st.plotly_chart(fig, theme="streamlit", use_container_width=True)
 
 
 with col2:
