@@ -13,45 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""An example of showing geographic data."""
 
-import altair as alt
 import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
-import pydeck as pdk
-#import streamlit_nested_layout
 import streamlit as st
-from matplotlib import pyplot as plt, colors, dates
-import plotly.express as px
-import plotly.figure_factory as ff
-
-# fig.patch.set_facecolor('#FFFFFF')
-# fig.patch.set_alpha(0.0)
-#
-# ax.patch.set_facecolor('#FFFFFF')
-# ax.patch.set_alpha(0.0)
+from matplotlib import pyplot as plt, dates
 
 plt.style.use('matplotlib_housestyle_dark.mplstyle')
-# plt.rcParams['grid.alpha']=0.5
-# plt.rcParams['grid.color']='#DDDDDD'
-# plt.rcParams['grid.linestyle']='-'
-# plt.rcParams['grid.linewidth']='1'
-# plt.rcParams['figure.facecolor']='#dd44aa'#'#FFFFFF'
-# plt.rcParams['axes.facecolor']='#1122ee'#'#FFFFFF'
-# #plt.rcParams['axesfacecolor']='red'
-# #plt.rcParams['axesfacecolor']='red'
-# #plt.rcParams['axesfacecolor']='red'
-
-
-
-
-
-
-
-
-
-
 
 np.random.seed(42)
 
@@ -150,9 +119,10 @@ def simplify_list_of_date_strings(list_of_timestamps):
 # Page title
 st.set_page_config(layout="wide", page_title="CT MMM Results - Channel one-pager", page_icon=":m::m::m:")
 
+st.header('Channel One-pager')
+
 st.warning(":warning: For a PoC, this has been done on my public GitHub profile, but don't worry, this is not real data")
 
-st.warning(":warning: Plots can be made interactive using `plotly` or `streamlit`, but at the expense of flexibility in how data can be visualised")
 
 
 # TODO: read real data from BigQuery or GCS (instead of simulating the data as is done here)
@@ -239,38 +209,6 @@ else:
 df_agg.columns = [f'{col1}_{col2}' for col1, col2 in df_agg.columns]
 df_agg['RoAS'] = df_agg['revenue_sum'] / df_agg['spend_sum']
 
-#st.dataframe(df_agg)
-
-
-
-#st.info(':information_source:  here it is :shark: ::')
-#st.warning(':warning:  watch out!')
-# with st.container():
-#     col1, col2, col3, col4, col5, col6 = st.columns((1,1,1,1,1,1))
-#
-#     with col1:
-#         do_something = st.button('Click me!', ['a', 'b', 'c'])
-#         st.caption("Use this to define the area of focus")
-#
-#     with col2:
-#         choice = st.radio('One choice', ['a', 'b', 'c'])
-#
-#     with col3:
-#         choice = st.selectbox('One choice', ['a', 'b', 'c'])
-#         st.caption("Use this to define the area of focus")
-#
-#     with col4:
-#         choices = st.multiselect('Pick many', ['a', 'b', 'c', 'd', 'e'])
-#         st.caption("Use this to define the area of focus")
-#
-#     with col5:
-#         start_date = st.date_input('Start date')
-#         st.caption("Use this to define the area of focus")
-#
-#     with col6:
-#         hour_to_filter = st.slider('hour', 0, 23, 17)  # min: 0h, max: 23h, default: 17h
-#         st.caption("Use this to define the area of focus")
-
 def format_number(number):
     if number >= 1000000000:
         return f'{number/1e9:.1f}b'
@@ -295,7 +233,7 @@ def format_number(number):
 
 
 
-st.header('RoAS')
+st.header('Attributed revenue and RoAS')
 
 col1, col2, col3, col4, col5, col6 = st.columns((1, 1, 1, 1, 1, 2))
 with col1:
@@ -312,34 +250,9 @@ with col6:
     pass
 
 
-#st.subheader('RoAS Time Series')
 col1, col2 = st.columns((2, 1))
 with col1:
     st.subheader('Time series plot')
-
-    # fig, ax = plt.subplots(1, 1, figsize=(8, 5), constrained_layout=True)
-    # ax.scatter(
-    #     x=df_agg['date_agg_'],
-    #     y=df_agg['RoAS'],
-    #     s=25,
-    #     marker='s',
-    #     color='#6E2132',
-    #     alpha=0.05,
-    #     zorder=3,
-    #     label=None,
-    # )
-    # date_form = dates.DateFormatter("%d %b\n%Y")
-    # ax.xaxis.set_major_formatter(date_form)
-    # ax.set_xticklabels(
-    #     simplify_list_of_date_strings([datetime(1970, 1, 1) + timedelta(days=i) for i in ax.get_xticks()]),
-    #     fontstyle='italic')
-    # ax.grid(zorder=0)
-    # ax.set_ylim(bottom=0.0)
-    # ax.legend(loc='lower left')
-    # ax.set_ylabel('RoAS', fontstyle='oblique')
-    # fig.patch.set_alpha(0.0)
-    # ax.patch.set_alpha(0.0)
-    # st.pyplot(fig)
 
     fig, ax = plt.subplots(1, 1, figsize=(8, 5), constrained_layout=True)
 
@@ -348,7 +261,6 @@ with col1:
     for agg in ['amin', 'q05', 'q10', 'q20', 'q32', 'median', 'q68', 'q80', 'q90', 'q95', 'amax']:
         df_agg_intervals[f'RoAS_{agg}'] = df_agg_intervals[f'revenue_sum_{agg}'] / df_agg_intervals[f'spend_sum_{agg}']
     df_agg_intervals.reset_index(inplace=True)
-    #st.dataframe(df_agg_intervals)
 
     for low, high in [('amin', 'amax'), ('q05', 'q95'), ('q10', 'q90'), ('q20', 'q80'), ('q32', 'q68')]:
         l = df_agg_intervals[f'RoAS_{low}']
@@ -358,24 +270,17 @@ with col1:
             l,
             h,
             color  = '#6E2132',
-            #linestyle=None,
             linewidth=0.0,
             alpha  = 0.2,
-            # label  = f'range',
             zorder=3,
-            #label='predicted'
         )
     ax.plot(
         df_agg_intervals['date_agg_'],
         df_agg_intervals['RoAS_median'],
-        # s=25,
-        # marker='s',
         color='#6E2132',
         ls = '-',
         linewidth='2',
-        # alpha=0.05,
         zorder=3,
-        # label=None,
     )
 
     date_form = dates.DateFormatter("%d %b\n%Y")
@@ -385,44 +290,17 @@ with col1:
         fontstyle='italic')
     ax.grid(zorder=0)
     ax.set_ylim(bottom=0.0)
-    ax.legend(loc='lower left')
     ax.set_ylabel('RoAS', fontstyle='oblique')
     fig.patch.set_alpha(0.0)
     ax.patch.set_alpha(0.0)
     st.pyplot(fig)
 
 
-    # fig = px.scatter(
-    #     df_agg,  # .query("year==2007"),
-    #     x="date_agg_",
-    #     y="RoAS",
-    #     # size="pop",
-    #     color="optimal_model_id_",
-    #     # hover_name="country",
-    #     # log_x=True,
-    #     opacity=0.5,
-    #     size_max=60,
-    # )
-    # fig.update_layout(yaxis_range=[0, 15])
-    #
-    # # Use the Streamlit theme.
-    # # This is the default. So you can also omit the theme argument.
-    # st.plotly_chart(fig, theme="streamlit", use_container_width=True)
-    #
-    # st.info(':information_source:  click on models to add/remove from plot')
-
-
-
-
-
 with col2:
-    st.subheader('Tabular data')
+    st.subheader('Raw data')
 
-    #st.dataframe(df_agg)
     df_agg_over_models = df_agg.groupby('date_agg_')[['spend_sum', 'revenue_sum']].mean()
     df_agg_over_models['RoAS'] = df_agg_over_models['revenue_sum'] / df_agg_over_models['spend_sum']
-
-    #st.dataframe(df_agg_over_models)
 
 
     if DATE_AGGREGATION == 'Daily':
@@ -436,8 +314,6 @@ with col2:
     else:
         pass
     df_agg_over_models.set_index('date_readable', inplace=True)
-
-    #do_something = st.button(f'Download {CADENCE} data (CSV)')
 
     if st.checkbox('Use dates as columns'):
         df_display = df_agg_over_models.T
@@ -454,36 +330,6 @@ with col2:
     )
 
 
-
-
-# with st.container():
-#     col1, col2 = st.columns((2,1))
-#
-#     with col1:
-#         with st.container():
-#             st.subheader('RoAS Time Series')
-#         with st.container():
-#             st.subheader('Raw data')
-#             with st.expander("See explanation"):
-#                 st.write("""
-#                     The chart above shows some numbers I picked for you.
-#                     I rolled actual dice for these, so they're *guaranteed* to
-#                     be random.
-#                 """)
-
-            # do_something = st.button(f'Download {CADENCE} data')
-            # if do_something:
-            #     st.write(f'{CADENCE} data downloaded!')
-            #     a = 1
-
-
-        #import streamlit as st
-
-        #df = px.data.gapminder()
-
-# TODO: remove gridlines
-
-# TODO: remove ff plots and go back to plotly express
 @st.experimental_singleton
 def generate_simulated_response_curves():
     data = []
@@ -514,9 +360,17 @@ df_response_curves = df_response_curves[df_response_curves['channel']==CHANNEL]
 df_response_curves = df_response_curves[~df_response_curves['optimal_model_id'].isin(MODELS_TO_EXCLUDE)]
 
 
-st.header('Response curves')
+# TODO: calculate max RoAS, RoI and profit from `df_response_curves` median values
+df_response_curves_agg = df_response_curves.groupby('investment')['return'].median().reset_index()
+df_response_curves_agg['profit'] = df_response_curves_agg['return'] - df_response_curves_agg['investment']
+df_response_curves_agg['RoAS'] = df_response_curves_agg['return'] / df_response_curves_agg['investment']
+df_response_curves_agg['RoI'] = (df_response_curves_agg['return'] - df_response_curves_agg['investment']) / df_response_curves_agg['investment']
+
+investment_max_profit = int(df_response_curves_agg.iloc[df_response_curves_agg['profit'].idxmax()]['investment'])
+investment_break_even = int(df_response_curves_agg.iloc[abs(df_response_curves_agg['RoAS']-1.0).idxmin()]['investment'])
+
+st.header('Budget simulation')
 with st.container():
-    #RESPONSE_CURVE_METRIC = st.radio('Metric to display in response curves', ('return', 'RoAS'), 0)
 
     col1, col2, col3 = st.columns((1, 1, 2))
 
@@ -530,15 +384,23 @@ with st.container():
     with col3:
         pass
 
-#st.caption("Use this to define the area of focus")
+
 with st.container():
 
     col1, col2 = st.columns((2,2))
 
     with col1:
-        st.subheader('Return-investment curves')
+        st.subheader('Response curves')
 
         fig, ax = plt.subplots(1, 1, figsize=(8, 5), constrained_layout=True)
+        ax.plot(
+            df_response_curves_agg['investment'],
+            df_response_curves_agg[RESPONSE_CURVE_METRIC],
+            color='#6E2132',
+            linewidth=4.0,
+            zorder=4,
+            label='median',
+        )
 
         for optimal_model_id in df_response_curves['optimal_model_id']:
 
@@ -547,29 +409,34 @@ with st.container():
             ax.plot(
                 df_['investment'],
                 df_[RESPONSE_CURVE_METRIC],
-                #s=25,
-                #marker='s',
-                color='#6E2132',
-                #alpha=0.05,
+                color='#666666',
+                linewidth=0.5,
                 zorder=3,
-                #label=None,
             )
-            # date_form = dates.DateFormatter("%d %b\n%Y")
-            # ax.xaxis.set_major_formatter(date_form)
-            # ax.set_xticklabels(
-            #     simplify_list_of_date_strings([datetime(1970, 1, 1) + timedelta(days=i) for i in ax.get_xticks()]),
-            #     fontstyle='italic')
-            # ax.grid(zorder=0)
-            # ax.set_ylim(bottom=0.0)
-            # ax.legend(loc='lower left')
-            # ax.set_ylabel('RoAS', fontstyle='oblique')
-        ax.plot(
-            [INVESTMENT_LEVEL, INVESTMENT_LEVEL],
-            [0, ax.get_ylim()[1]],
-            ls='--',
-            color='#E09894',
-            zorder=4,
-        )
+
+
+        if RESPONSE_CURVE_METRIC == 'return':
+            ax.plot(
+                [0, min(ax.get_xlim()[1], ax.get_ylim()[1])],
+                [0, min(ax.get_xlim()[1], ax.get_ylim()[1])],
+                ls='--',
+                color='#E09894',
+                zorder=4,
+                label='return = investment'
+            )
+            ax.set_ylim(bottom=0.0)
+            ax.legend(loc='upper left')
+        if RESPONSE_CURVE_METRIC == 'RoAS':
+            ax.plot(
+                [0, ax.get_xlim()[1]],
+                [1.0, 1.0],
+                ls='--',
+                color='#E09894',
+                zorder=4,
+                label='RoAS = 1'
+            )
+            ax.set_ylim(bottom=0.0, top=10.0)
+            ax.legend(loc='upper right')
 
         ax.set_xlabel('Investment', fontstyle='oblique')
         ax.set_ylabel(RESPONSE_CURVE_METRIC, fontstyle='oblique')
@@ -579,25 +446,6 @@ with st.container():
         st.pyplot(fig)
 
 
-        # fig = px.line(
-        #     df_response_curves,
-        #     x="investment",
-        #     y=RESPONSE_CURVE_METRIC,
-        #     # size="pop",
-        #     color="optimal_model_id",
-        #     # hover_name="country",
-        #     # log_x=True,
-        #     #opacity=0.5,
-        #     #size_max=60,
-        # )
-        # #fig.update_layout(yaxis_range=[0, 15])
-
-        # # Use the Streamlit theme.
-        # # This is the default. So you can also omit the theme argument.
-        # st.plotly_chart(fig, theme="streamlit", use_container_width=True)
-        #
-        # st.info(':information_source:  click on models to add/remove from plot')
-
     with col2:
         st.subheader('Probable returns')
         #
@@ -605,23 +453,11 @@ with st.container():
 
 
         # the histogram of the data
+        # TODO: add a histogram of spend values below plot
         fig, ax = plt.subplots(1, 1, figsize=(8, 5), constrained_layout=True)
         n, bins, patches = ax.hist(df_investment_level[RESPONSE_CURVE_METRIC], 10, facecolor='#6E2132', density=True, alpha=0.75, zorder=3)
-        #print(n, bins)
-
-        # fig, ax = plt.subplots(1, 1, figsize=(8, 5), constrained_layout=True)
-        # mu, sigma = 100, 15
-        # x = mu + sigma * np.random.randn(10000)
-        # x = df_investment_level[RESPONSE_CURVE_METRIC]
-        # n, bins, patches = plt.hist(x, 50, density=True, facecolor='g', alpha=0.75)
-        # print(n, bins)
 
         ax.set_xlabel(RESPONSE_CURVE_METRIC, fontstyle='oblique')
-        # ax.set_ylabel('Probability')
-        # plt.title('Histogram of IQ')
-        # plt.text(60, .025, r'$\mu=100,\ \sigma=15$')
-        # plt.xlim(40, 160)
-        # plt.ylim(0, 0.03)
         ax.plot(
             [INVESTMENT_LEVEL, INVESTMENT_LEVEL],
             [0, ax.get_ylim()[1]],
@@ -629,41 +465,35 @@ with st.container():
             color='#E09894',
             zorder=4
         )
-
+        # TODO: annotate what the vertical line means
+        # plt.annotate(
+        #     'selected investment',
+        #     xy=(INVESTMENT_LEVEL, ax.get_ylim()[1]),
+        #     color='#cc0000',
+        #     fontsize=18,
+        #     horizontalalignment='left',
+        #     verticalalignment='center',
+        #     #backgroundcolor=
+        # )
+        ax.spines[['left', 'top', 'right']].set_visible(False)
         ax.grid(zorder=0)
+        ax.set_xlim(left=0.0)
         ax.set_ylim(bottom=0.0)
         ax.set_yticks([])
-        #ax.legend(loc='lower left')
-        #ax.set_ylabel('RoAS', fontstyle='oblique')
-        # plt.show()
         fig.patch.set_alpha(0.0)
         ax.patch.set_alpha(0.0)
         st.pyplot(fig)
 
-
-        # # TODO: add bar plot here
-        # hist1, bins = np.histogram(df_investment_level[RESPONSE_CURVE_METRIC], bins=20)
-        # # df_hist1 = pd.DataFrame(data=hist), columns=['value', 'bin'])
-        # # st.write(df_hist1)
-        # st.bar_chart(data=hist1)
-
-        #fig = ff.create_distplot([df_investment_level[RESPONSE_CURVE_METRIC]], group_labels=['xx'], bin_size=df_investment_level[RESPONSE_CURVE_METRIC].max()/20)
-        # #fig = px.histogram(df, x="return", y="return")
-        # st.plotly_chart(fig, theme="streamlit", use_container_width=True)
-        # #fig.show()
-
-col1, col2, col3, col4 = st.columns((1, 1, 1, 3))
+col1, col2, col3 = st.columns((1, 1, 4))
 
 with col1:
-    st.metric(label="Optimum RoAS at:", value='£1,030')
+    # when total spend = total investment, profit=zero
+    st.metric(label="Max. profit:", value=investment_max_profit)
 
 with col2:
-    st.metric(label="Optimum RoI at:", value='£500')
+    st.metric(label="Break even:", value=investment_break_even)
 
 with col3:
-    st.metric(label="Maximum profit at:", value='£2,850')
-
-with col4:
         pass
 
 
@@ -692,7 +522,6 @@ df_adstock_decay_rates = df_adstock_decay_rates[df_adstock_decay_rates['channel'
 #  3. Exclude selected models
 df_adstock_decay_rates = df_adstock_decay_rates[~df_adstock_decay_rates['optimal_model_id'].isin(MODELS_TO_EXCLUDE)]
 
-#st.dataframe(df_adstock_decay_rates)
 
 st.header('Carry-over effect')
 
@@ -704,50 +533,34 @@ with col1:
     fig, ax = plt.subplots(1, 1, figsize=(8, 5), constrained_layout=True)
     n, bins, patches = ax.hist(df_adstock_decay_rates['theta'], 10, facecolor='#6E2132', density=True,
                                alpha=0.75, zorder=3)
-    # print(n, bins)
-
-    # fig, ax = plt.subplots(1, 1, figsize=(8, 5), constrained_layout=True)
-    # mu, sigma = 100, 15
-    # x = mu + sigma * np.random.randn(10000)
-    # x = df_investment_level[RESPONSE_CURVE_METRIC]
-    # n, bins, patches = plt.hist(x, 50, density=True, facecolor='g', alpha=0.75)
-    # print(n, bins)
 
     ax.set_xlabel('Carry-over effect', fontstyle='oblique')
-    # ax.set_ylabel('Probability')
-    # plt.title('Histogram of IQ')
-    # plt.text(60, .025, r'$\mu=100,\ \sigma=15$')
-    # plt.xlim(40, 160)
-    # plt.ylim(0, 0.03)
+    ax.spines[['left', 'top', 'right']].set_visible(False)
     ax.grid(zorder=0)
     ax.set_ylim(bottom=0.0)
     ax.set_yticks([])
-    # ax.legend(loc='lower left')
-    # ax.set_ylabel('RoAS', fontstyle='oblique')
-    # plt.show()
     fig.patch.set_alpha(0.0)
     ax.patch.set_alpha(0.0)
     st.pyplot(fig)
 
 
-    # # TODO: add bar plot here
-    # hist, bins = np.histogram(df_adstock_decay_rates['theta'], bins=np.linspace(0, 1, 21))
-    # #df_hist1 = pd.DataFrame(data=hist), columns=['value', 'bin'])
-    # #st.write(df_hist1)
-    # st.bar_chart(data=hist)
-
-    #print(hist)
-
-    # fig = ff.create_distplot([df_adstock_decay_rates['theta']], group_labels=['x3'], bin_size=0.05)
-    # st.plotly_chart(fig, theme="streamlit", use_container_width=True)
-
-
 with col2:
     st.subheader('Strength of effect with time')
 
-    days = np.linspace(1, 14, 14)
+    days = np.logspace(0, 1.5, 20)
+
+    theta_median = df_adstock_decay_rates['theta'].median()
+    adstock_median = theta_median ** days
 
     fig, ax = plt.subplots(1, 1, figsize=(8, 5), constrained_layout=True)
+    ax.plot(
+        days,
+        adstock_median,
+        color='#6E2132',
+        linewidth=4.0,
+        zorder=4,
+        label='median',
+    )
 
     for theta in df_adstock_decay_rates['theta']:
         adstock = theta ** days
@@ -757,22 +570,14 @@ with col2:
             adstock,
             # s=25,
             # marker='s',
-            color='#6E2132',
+            color='#666666',#6E2132
             # alpha=0.05,
             zorder=3,
             # label=None,
         )
-        # date_form = dates.DateFormatter("%d %b\n%Y")
-        # ax.xaxis.set_major_formatter(date_form)
-        # ax.set_xticklabels(
-        #     simplify_list_of_date_strings([datetime(1970, 1, 1) + timedelta(days=i) for i in ax.get_xticks()]),
-        #     fontstyle='italic')
-        # ax.grid(zorder=0)
-        # ax.set_ylim(bottom=0.0)
-        # ax.legend(loc='lower left')
-        # ax.set_ylabel('RoAS', fontstyle='oblique')
     ax.set_xlabel('Elapsed days', fontstyle='oblique')
     ax.set_ylabel('Adstock', fontstyle='oblique')
+    ax.set_ylim(top=0.25)
     ax.grid(zorder=0)
     fig.patch.set_alpha(0.0)
     ax.patch.set_alpha(0.0)
