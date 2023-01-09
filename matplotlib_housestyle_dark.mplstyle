@@ -1,0 +1,51 @@
+# For a guide on how to define your own matplotlib housestyle, see:
+# https://matplotlib.org/stable/tutorials/introductory/customizing.html#defining-your-own-style
+
+# Figure
+figure.facecolor: 000000
+
+# Font
+font.family:  sans-serif
+font.style:   italic
+
+# Text
+text.color: dddddd
+
+# Axis titles
+axes.labelcolor:  dddddd
+axes.labelsize :  20
+
+# Plot area
+axes.facecolor:     010101  # background color of plot
+axes.edgecolor:     dddddd  # axes edge color
+axes.linewidth:     1.5     # edge line width
+axes.spines.left:   True  # display axis spines
+axes.spines.bottom: True
+axes.spines.top:    False
+axes.spines.right:  False
+
+# Gridlines
+grid.color:     222222  # grid color
+grid.linestyle: -       # solid
+grid.linewidth: 0.5     # in points
+grid.alpha:     1.0     # transparency, between 0.0 and 1.0
+axes.axisbelow: True    # below patches and lines
+
+# Ticks and labels
+xtick.color:         dddddd   # color of the ticks
+xtick.labelcolor:    inherit  # inherit from xtick.color
+xtick.labelsize:     16       # font size of the tick labels
+ytick.color:         dddddd   # color of the ticks
+ytick.labelcolor:    inherit  # inherit from ytick.color
+ytick.labelsize:     16       # font size of the tick labels
+xtick.major.size:    3.0     # major tick size in points
+xtick.minor.size:    1.0     # minor tick size in points
+xtick.major.width:   1.0     # major tick width in points
+xtick.minor.width:   0.6     # minor tick width in points
+
+# Legend
+legend.fontsize:   14  # in points
+
+# Default colours for plot lines, speak to the Digital Product Design team, or see:
+# https://charlottetilbury.invisionapp.com/dsm/charlotte-tilbury/ct-pilot-dsm/nav/60328ada735e1f1656f7dc49/folder/60328ada735e1fee6cf7dc3c?mode=preview
+axes.prop_cycle: cycler('color', ['6E2132', '340C0C', 'E09894', 'FDE8E0'])

@@ -18,12 +18,39 @@
 import altair as alt
 import numpy as np
 import pandas as pd
+from datetime import datetime, timedelta
 import pydeck as pdk
 #import streamlit_nested_layout
 import streamlit as st
-from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt, colors, dates
 import plotly.express as px
 import plotly.figure_factory as ff
+
+# fig.patch.set_facecolor('#FFFFFF')
+# fig.patch.set_alpha(0.0)
+#
+# ax.patch.set_facecolor('#FFFFFF')
+# ax.patch.set_alpha(0.0)
+
+plt.style.use('matplotlib_housestyle_dark.mplstyle')
+# plt.rcParams['grid.alpha']=0.5
+# plt.rcParams['grid.color']='#DDDDDD'
+# plt.rcParams['grid.linestyle']='-'
+# plt.rcParams['grid.linewidth']='1'
+# plt.rcParams['figure.facecolor']='#dd44aa'#'#FFFFFF'
+# plt.rcParams['axes.facecolor']='#1122ee'#'#FFFFFF'
+# #plt.rcParams['axesfacecolor']='red'
+# #plt.rcParams['axesfacecolor']='red'
+# #plt.rcParams['axesfacecolor']='red'
+
+
+
+
+
+
+
+
+
 
 
 np.random.seed(42)
@@ -39,10 +66,94 @@ def q80(x): return x.quantile(0.80, interpolation='linear') # 80th Percentile
 def q90(x): return x.quantile(0.90, interpolation='linear') # 90th Percentile
 def q95(x): return x.quantile(0.95, interpolation='linear') # 95th Percentile
 
+
+def simplify_list_of_date_strings(list_of_timestamps):
+    '''
+    Simplify list of date strings so that years and months are not
+    repeated in consecutive values
+
+    For example, given the following list of dates:
+
+        11 Nov 1999
+        21 Nov 1999
+        01 Dec 1999
+        11 Dec 1999
+        21 Dec 1999
+        31 Dec 1999
+        11 Jan 2000
+        21 Jan 2000
+
+    This would be simplified to:
+
+        11 Nov 1999
+        21 ^   ^
+         1 Dec ^
+        11 ^   ^
+        21 ^   ^
+        31 ^   ^
+        11 Jan 2000
+        21 ^   ^
+
+    Parameters
+    ----------
+        list_of_timestamps : array (of timestamps)
+            Timestamps
+
+    Returns
+    -------
+        simplified_list_of_date_strings : array (of str)
+            Simplified list of date strings where year-parts and
+            month-parts are not repeated in consecutive values
+    '''
+
+    # Keep first value as it is
+    simplified_list_of_date_strings = [
+        f'{list_of_timestamps[0].day}' + datetime.strftime(list_of_timestamps[0], '\n%b\n%Y'), ]
+
+    # Loop through timestamp
+    for i in range(1, len(list_of_timestamps)):
+
+        current = list_of_timestamps[i]
+        previous = list_of_timestamps[i - 1]
+
+        # If year of current date is the same as year of previous date
+        # AND month of current date is the same as month of previous date
+        #   e.g., 1 Jan 1999 and 2 Jan 1999  ->  '2'
+        # Then only show day-part
+        if (current.year == previous.year) and (current.month == previous.month):
+            simplified_date_string = f'{current.day}\n'  # datetime.strftime(current, '%d\n')
+
+        # If year of current date is the same as year of previous date
+        # BUT month of current date is different to month of previous date
+        #   e.g., 31 Jan 1999 and 1 Feb 1999  ->  '1 Feb'
+        # Then only show day-part and month-part
+        elif (current.year == previous.year) and (current.month != previous.month):
+            simplified_date_string = f'{current.day}' + datetime.strftime(current,
+                                                                          '\n%b\n')  # datetime.strftime(current, '%d\n%b\n')
+
+        # If year of current date is different to year of previous date
+        # AND month of current date is different to month of previous date
+        # Then show whole date
+        #   e.g., 31 Dec 1999 and 1 Jan 2000  ->  '1 Jan 2000'
+        elif (current.year != previous.year) and (current.month != previous.month):
+            simplified_date_string = f'{current.day}' + datetime.strftime(current,
+                                                                          '\n%b\n%Y')  # datetime.strftime(current, '%d\n%b\n%Y')
+
+        # Catch any exceptions (for whatever reason)
+        else:
+            simplified_date_string = 'unformatted'
+
+        simplified_list_of_date_strings.append(simplified_date_string)
+
+    return simplified_list_of_date_strings
+
 # Page title
 st.set_page_config(layout="wide", page_title="CT MMM Results - Channel one-pager", page_icon=":m::m::m:")
 
 st.warning(":warning: For a PoC, this has been done on my public GitHub profile, but don't worry, this is not real data")
+
+st.warning(":warning: Plots can be made interactive using `plotly` or `streamlit`, but at the expense of flexibility in how data can be visualised")
+
 
 # TODO: read real data from BigQuery or GCS (instead of simulating the data as is done here)
 # LOAD DATA ONCE
@@ -87,7 +198,7 @@ with st.sidebar:
             DATE_END = st.date_input('End date', value=df_raw['date'].max())
             DATE_END = np.datetime64(DATE_END)
 
-    DATE_AGGREGATION = st.radio('Date aggregation', ('Daily', 'Weekly', 'Monthly', 'Quarterly'), 0)
+    DATE_AGGREGATION = st.radio('Date aggregation', ('Daily', 'Weekly', 'Monthly', 'Quarterly'), 2)
 
     MODELS_TO_EXCLUDE = []
     if st.checkbox('Exclude pareto models'):
@@ -190,7 +301,7 @@ col1, col2, col3, col4 = st.columns((1, 1, 1, 3))
 with col1:
     st.metric(label="Spend", value=format_number(df_agg['spend_sum'].sum()), delta=34)
 with col2:
-    st.metric(label="Revenue", value=format_number(df_agg['revenue_sum'].sum()), delta=-43)
+    st.metric(label="Attributed\nRevenue", value=format_number(df_agg['revenue_sum'].sum()), delta=-43)
 with col3:
     st.metric(label="RoAS", value=format_number(df_agg['revenue_sum'].sum() / df_agg['spend_sum'].sum()), delta=0.1)
 with col4:
@@ -202,24 +313,103 @@ col1, col2 = st.columns((2, 1))
 with col1:
     st.subheader('Time series plot')
 
-    fig = px.scatter(
-        df_agg,  # .query("year==2007"),
-        x="date_agg_",
-        y="RoAS",
-        # size="pop",
-        color="optimal_model_id_",
-        # hover_name="country",
-        # log_x=True,
-        opacity=0.5,
-        size_max=60,
+    # fig, ax = plt.subplots(1, 1, figsize=(8, 5), constrained_layout=True)
+    # ax.scatter(
+    #     x=df_agg['date_agg_'],
+    #     y=df_agg['RoAS'],
+    #     s=25,
+    #     marker='s',
+    #     color='#6E2132',
+    #     alpha=0.05,
+    #     zorder=3,
+    #     label=None,
+    # )
+    # date_form = dates.DateFormatter("%d %b\n%Y")
+    # ax.xaxis.set_major_formatter(date_form)
+    # ax.set_xticklabels(
+    #     simplify_list_of_date_strings([datetime(1970, 1, 1) + timedelta(days=i) for i in ax.get_xticks()]),
+    #     fontstyle='italic')
+    # ax.grid(zorder=0)
+    # ax.set_ylim(bottom=0.0)
+    # ax.legend(loc='lower left')
+    # ax.set_ylabel('RoAS', fontstyle='oblique')
+    # fig.patch.set_alpha(0.0)
+    # ax.patch.set_alpha(0.0)
+    # st.pyplot(fig)
+
+    fig, ax = plt.subplots(1, 1, figsize=(8, 5), constrained_layout=True)
+
+    df_agg_intervals = df_agg.groupby('date_agg_')[['spend_sum', 'revenue_sum']].agg([np.min, q05, q10, q20, q32, np.median, q68, q80, q90, q95, np.max])
+    df_agg_intervals.columns = [f'{col1}_{col2}' for col1, col2 in df_agg_intervals.columns]
+    for agg in ['amin', 'q05', 'q10', 'q20', 'q32', 'median', 'q68', 'q80', 'q90', 'q95', 'amax']:
+        df_agg_intervals[f'RoAS_{agg}'] = df_agg_intervals[f'revenue_sum_{agg}'] / df_agg_intervals[f'spend_sum_{agg}']
+    df_agg_intervals.reset_index(inplace=True)
+    #st.dataframe(df_agg_intervals)
+
+    for low, high in [('amin', 'amax'), ('q05', 'q95'), ('q10', 'q90'), ('q20', 'q80'), ('q32', 'q68')]:
+        l = df_agg_intervals[f'RoAS_{low}']
+        h = df_agg_intervals[f'RoAS_{high}']
+        ax.fill_between(
+            df_agg_intervals['date_agg_'],
+            l,
+            h,
+            color  = '#6E2132',
+            #linestyle=None,
+            linewidth=0.0,
+            alpha  = 0.2,
+            # label  = f'range',
+            zorder=3,
+            #label='predicted'
+        )
+    ax.plot(
+        df_agg_intervals['date_agg_'],
+        df_agg_intervals['RoAS_median'],
+        # s=25,
+        # marker='s',
+        color='#6E2132',
+        ls = '-',
+        linewidth='2',
+        # alpha=0.05,
+        zorder=3,
+        # label=None,
     )
-    fig.update_layout(yaxis_range=[0, 15])
 
-    # Use the Streamlit theme.
-    # This is the default. So you can also omit the theme argument.
-    st.plotly_chart(fig, theme="streamlit", use_container_width=True)
+    date_form = dates.DateFormatter("%d %b\n%Y")
+    ax.xaxis.set_major_formatter(date_form)
+    ax.set_xticklabels(
+        simplify_list_of_date_strings([datetime(1970, 1, 1) + timedelta(days=i) for i in ax.get_xticks()]),
+        fontstyle='italic')
+    ax.grid(zorder=0)
+    ax.set_ylim(bottom=0.0)
+    ax.legend(loc='lower left')
+    ax.set_ylabel('RoAS', fontstyle='oblique')
+    fig.patch.set_alpha(0.0)
+    ax.patch.set_alpha(0.0)
+    st.pyplot(fig)
 
-    st.info(':information_source:  click on models to add/remove from plot')
+
+    # fig = px.scatter(
+    #     df_agg,  # .query("year==2007"),
+    #     x="date_agg_",
+    #     y="RoAS",
+    #     # size="pop",
+    #     color="optimal_model_id_",
+    #     # hover_name="country",
+    #     # log_x=True,
+    #     opacity=0.5,
+    #     size_max=60,
+    # )
+    # fig.update_layout(yaxis_range=[0, 15])
+    #
+    # # Use the Streamlit theme.
+    # # This is the default. So you can also omit the theme argument.
+    # st.plotly_chart(fig, theme="streamlit", use_container_width=True)
+    #
+    # st.info(':information_source:  click on models to add/remove from plot')
+
+
+
+
 
 with col2:
     st.subheader('Tabular data')
@@ -250,7 +440,7 @@ with col2:
     else:
         df_display = df_agg_over_models.copy(deep=True)
 
-    st.dataframe(df_display)
+    st.dataframe(df_display, height=250)
 
     st.download_button(
         label=f"Export {DATE_AGGREGATION} data (CSV)",
@@ -258,6 +448,8 @@ with col2:
         file_name=f'{DATE_AGGREGATION}-MMM-RoAS-data.csv',
         mime='text/csv',
     )
+
+
 
 
 # with st.container():
@@ -319,46 +511,137 @@ df_response_curves = df_response_curves[~df_response_curves['optimal_model_id'].
 
 
 st.header('Response curves')
+with st.container():
+    #RESPONSE_CURVE_METRIC = st.radio('Metric to display in response curves', ('return', 'RoAS'), 0)
+
+    col1, col2, col3 = st.columns((1, 1, 2))
+
+    with col1:
+        RESPONSE_CURVE_METRIC = st.radio('Metric to display in response curves', ('return', 'RoAS'), 0)
+
+    with col2:
+        INVESTMENT_LEVEL = st.select_slider("Investment level", options=df_response_curves['investment'].unique(),
+                                            value=500, key="x")
+
+    with col3:
+        pass
 
 #st.caption("Use this to define the area of focus")
 with st.container():
-    RESPONSE_CURVE_METRIC = st.radio('Metric to display in response curves', ('return', 'RoAS'), 0)
 
-    col1, col2 = st.columns((3,2))
+    col1, col2 = st.columns((2,2))
 
     with col1:
-        st.subheader('Return-investment curve')
+        st.subheader('Return-investment curves')
 
-        fig = px.line(
-            df_response_curves,
-            x="investment",
-            y=RESPONSE_CURVE_METRIC,
-            # size="pop",
-            color="optimal_model_id",
-            # hover_name="country",
-            # log_x=True,
-            #opacity=0.5,
-            #size_max=60,
+        fig, ax = plt.subplots(1, 1, figsize=(8, 5), constrained_layout=True)
+
+        for optimal_model_id in df_response_curves['optimal_model_id']:
+
+            df_ = df_response_curves[df_response_curves['optimal_model_id']==optimal_model_id]
+
+            ax.plot(
+                df_['investment'],
+                df_[RESPONSE_CURVE_METRIC],
+                #s=25,
+                #marker='s',
+                color='#6E2132',
+                #alpha=0.05,
+                zorder=3,
+                #label=None,
+            )
+            # date_form = dates.DateFormatter("%d %b\n%Y")
+            # ax.xaxis.set_major_formatter(date_form)
+            # ax.set_xticklabels(
+            #     simplify_list_of_date_strings([datetime(1970, 1, 1) + timedelta(days=i) for i in ax.get_xticks()]),
+            #     fontstyle='italic')
+            # ax.grid(zorder=0)
+            # ax.set_ylim(bottom=0.0)
+            # ax.legend(loc='lower left')
+            # ax.set_ylabel('RoAS', fontstyle='oblique')
+        ax.plot(
+            [INVESTMENT_LEVEL, INVESTMENT_LEVEL],
+            [0, ax.get_ylim()[1]],
+            ls='--',
+            color='#E09894',
+            zorder=4,
         )
-        #fig.update_layout(yaxis_range=[0, 15])
 
-        # Use the Streamlit theme.
-        # This is the default. So you can also omit the theme argument.
-        st.plotly_chart(fig, theme="streamlit", use_container_width=True)
+        ax.set_xlabel('Investment', fontstyle='oblique')
+        ax.set_ylabel(RESPONSE_CURVE_METRIC, fontstyle='oblique')
+        ax.grid(zorder=0)
+        fig.patch.set_alpha(0.0)
+        ax.patch.set_alpha(0.0)
+        st.pyplot(fig)
 
-        st.info(':information_source:  click on models to add/remove from plot')
+
+        # fig = px.line(
+        #     df_response_curves,
+        #     x="investment",
+        #     y=RESPONSE_CURVE_METRIC,
+        #     # size="pop",
+        #     color="optimal_model_id",
+        #     # hover_name="country",
+        #     # log_x=True,
+        #     #opacity=0.5,
+        #     #size_max=60,
+        # )
+        # #fig.update_layout(yaxis_range=[0, 15])
+
+        # # Use the Streamlit theme.
+        # # This is the default. So you can also omit the theme argument.
+        # st.plotly_chart(fig, theme="streamlit", use_container_width=True)
+        #
+        # st.info(':information_source:  click on models to add/remove from plot')
 
     with col2:
-        st.subheader('Investment level risk')
-        INVESTMENT_LEVEL = st.select_slider("Investment level", options=df_response_curves['investment'].unique(), value=500, key="x")
+        st.subheader('Probable returns')
         #
         df_investment_level = df_response_curves[df_response_curves['investment']==INVESTMENT_LEVEL]
 
-        # TODO: add bar plot here
-        hist1, bins = np.histogram(df_investment_level[RESPONSE_CURVE_METRIC], bins=20)
-        # df_hist1 = pd.DataFrame(data=hist), columns=['value', 'bin'])
-        # st.write(df_hist1)
-        st.bar_chart(data=hist1)
+
+        # the histogram of the data
+        fig, ax = plt.subplots(1, 1, figsize=(8, 5), constrained_layout=True)
+        n, bins, patches = ax.hist(df_investment_level[RESPONSE_CURVE_METRIC], 10, facecolor='#6E2132', density=True, alpha=0.75, zorder=3)
+        #print(n, bins)
+
+        # fig, ax = plt.subplots(1, 1, figsize=(8, 5), constrained_layout=True)
+        # mu, sigma = 100, 15
+        # x = mu + sigma * np.random.randn(10000)
+        # x = df_investment_level[RESPONSE_CURVE_METRIC]
+        # n, bins, patches = plt.hist(x, 50, density=True, facecolor='g', alpha=0.75)
+        # print(n, bins)
+
+        ax.set_xlabel(RESPONSE_CURVE_METRIC, fontstyle='oblique')
+        # ax.set_ylabel('Probability')
+        # plt.title('Histogram of IQ')
+        # plt.text(60, .025, r'$\mu=100,\ \sigma=15$')
+        # plt.xlim(40, 160)
+        # plt.ylim(0, 0.03)
+        ax.plot(
+            [INVESTMENT_LEVEL, INVESTMENT_LEVEL],
+            [0, ax.get_ylim()[1]],
+            ls='--',
+            color='#E09894',
+            zorder=4
+        )
+
+        ax.grid(zorder=0)
+        ax.set_ylim(bottom=0.0)
+        ax.set_yticks([])
+        #ax.legend(loc='lower left')
+        #ax.set_ylabel('RoAS', fontstyle='oblique')
+        # plt.show()
+        fig.patch.set_alpha(0.0)
+        ax.patch.set_alpha(0.0)
+        st.pyplot(fig)
+
+
+        # # TODO: add bar plot here
+        # hist1, bins = np.histogram(df_investment_level[RESPONSE_CURVE_METRIC], bins=20)
+        # # df_hist1 = pd.DataFrame(data=hist), columns=['value', 'bin'])
+        # # st.write(df_hist1)
+        # st.bar_chart(data=hist1)
 
         #fig = ff.create_distplot([df_investment_level[RESPONSE_CURVE_METRIC]], group_labels=['xx'], bin_size=df_investment_level[RESPONSE_CURVE_METRIC].max()/20)
         # #fig = px.histogram(df, x="return", y="return")
@@ -400,11 +683,40 @@ col1, col2 = st.columns((1, 1))
 with col1:
     st.subheader('Adstock decay')
 
-    # TODO: add bar plot here
-    hist, bins = np.histogram(df_adstock_decay_rates['theta'], bins=np.linspace(0, 1, 21))
-    #df_hist1 = pd.DataFrame(data=hist), columns=['value', 'bin'])
-    #st.write(df_hist1)
-    st.bar_chart(data=hist)
+    fig, ax = plt.subplots(1, 1, figsize=(8, 5), constrained_layout=True)
+    n, bins, patches = ax.hist(df_adstock_decay_rates['theta'], 10, facecolor='#6E2132', density=True,
+                               alpha=0.75, zorder=3)
+    # print(n, bins)
+
+    # fig, ax = plt.subplots(1, 1, figsize=(8, 5), constrained_layout=True)
+    # mu, sigma = 100, 15
+    # x = mu + sigma * np.random.randn(10000)
+    # x = df_investment_level[RESPONSE_CURVE_METRIC]
+    # n, bins, patches = plt.hist(x, 50, density=True, facecolor='g', alpha=0.75)
+    # print(n, bins)
+
+    ax.set_xlabel('Carry-over effect', fontstyle='oblique')
+    # ax.set_ylabel('Probability')
+    # plt.title('Histogram of IQ')
+    # plt.text(60, .025, r'$\mu=100,\ \sigma=15$')
+    # plt.xlim(40, 160)
+    # plt.ylim(0, 0.03)
+    ax.grid(zorder=0)
+    ax.set_ylim(bottom=0.0)
+    ax.set_yticks([])
+    # ax.legend(loc='lower left')
+    # ax.set_ylabel('RoAS', fontstyle='oblique')
+    # plt.show()
+    fig.patch.set_alpha(0.0)
+    ax.patch.set_alpha(0.0)
+    st.pyplot(fig)
+
+
+    # # TODO: add bar plot here
+    # hist, bins = np.histogram(df_adstock_decay_rates['theta'], bins=np.linspace(0, 1, 21))
+    # #df_hist1 = pd.DataFrame(data=hist), columns=['value', 'bin'])
+    # #st.write(df_hist1)
+    # st.bar_chart(data=hist)
 
     #print(hist)
 
@@ -416,31 +728,63 @@ with col2:
     st.subheader('Strength of effect with time')
 
     days = np.linspace(1, 14, 14)
-    theta = df_adstock_decay_rates['theta'].mean()
-    carry_over_effect = theta**days
-    df = pd.DataFrame(data=zip(days, carry_over_effect), columns=['elapsed_days', 'relative_effect'])
-    #st.dataframe(df)
+
+    fig, ax = plt.subplots(1, 1, figsize=(8, 5), constrained_layout=True)
+
+    for theta in df_adstock_decay_rates['theta']:
+        adstock = theta ** days
+
+        ax.plot(
+            days,
+            adstock,
+            # s=25,
+            # marker='s',
+            color='#6E2132',
+            # alpha=0.05,
+            zorder=3,
+            # label=None,
+        )
+        # date_form = dates.DateFormatter("%d %b\n%Y")
+        # ax.xaxis.set_major_formatter(date_form)
+        # ax.set_xticklabels(
+        #     simplify_list_of_date_strings([datetime(1970, 1, 1) + timedelta(days=i) for i in ax.get_xticks()]),
+        #     fontstyle='italic')
+        # ax.grid(zorder=0)
+        # ax.set_ylim(bottom=0.0)
+        # ax.legend(loc='lower left')
+        # ax.set_ylabel('RoAS', fontstyle='oblique')
+    ax.set_xlabel('Elapsed days', fontstyle='oblique')
+    ax.set_ylabel('Adstock', fontstyle='oblique')
+    ax.grid(zorder=0)
+    fig.patch.set_alpha(0.0)
+    ax.patch.set_alpha(0.0)
+    st.pyplot(fig)
 
 
-
-    # df['id'] = 'a'
+    # theta = df_adstock_decay_rates['theta'].mean()
+    # df = pd.DataFrame(data=zip(days, carry_over_effect), columns=['elapsed_days', 'relative_effect'])
+    # #st.dataframe(df)
     #
-    fig = px.line(
-        df,
-        x='elapsed_days',
-        y='relative_effect',
-        # size="pop",
-        #color="id",
-        # hover_name="country",
-        # log_x=True,
-        # opacity=0.5,
-        # size_max=60,
-    )
-    # fig.update_layout(yaxis_range=[0, 15])
-
-    # Use the Streamlit theme.
-    # This is the default. So you can also omit the theme argument.
-    st.plotly_chart(fig, theme="streamlit", use_container_width=True)
+    #
+    #
+    # # df['id'] = 'a'
+    # #
+    # fig = px.line(
+    #     df,
+    #     x='elapsed_days',
+    #     y='relative_effect',
+    #     # size="pop",
+    #     #color="id",
+    #     # hover_name="country",
+    #     # log_x=True,
+    #     # opacity=0.5,
+    #     # size_max=60,
+    # )
+    # # fig.update_layout(yaxis_range=[0, 15])
+    #
+    # # Use the Streamlit theme.
+    # # This is the default. So you can also omit the theme argument.
+    # st.plotly_chart(fig, theme="streamlit", use_container_width=True)
     #
     # INVESTMENT_LEVEL = st.select_slider("Investment level", options=df_response_curves['investment'].unique(), key="x2")
     #
@@ -453,11 +797,10 @@ with col2:
     # st.plotly_chart(fig, theme="streamlit", use_container_width=True)
     # # fig.show()
 
-# with st.container():
-#     arr = np.random.normal(1, 1, size=100)
-#     fig, ax = plt.subplots()
-#     ax.hist(arr, bins=20)
-#     st.pyplot(fig)
+
+
+
+# TODO: you can make pyplot charts interactive!
 
 # # FUNCTION FOR AIRPORT MAPS
 # def map(data, lat, lon, zoom):
