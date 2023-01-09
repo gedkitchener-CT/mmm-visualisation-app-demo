@@ -297,7 +297,7 @@ def format_number(number):
 
 st.header('RoAS')
 
-col1, col2, col3, col4 = st.columns((1, 1, 1, 3))
+col1, col2, col3, col4, col5, col6 = st.columns((1, 1, 1, 1, 1, 2))
 with col1:
     st.metric(label="Spend", value=format_number(df_agg['spend_sum'].sum()), delta=34)
 with col2:
@@ -305,6 +305,10 @@ with col2:
 with col3:
     st.metric(label="RoAS", value=format_number(df_agg['revenue_sum'].sum() / df_agg['spend_sum'].sum()), delta=0.1)
 with col4:
+    st.metric(label="Share of spend", value='13%')
+with col5:
+    st.metric(label="Share of effect", value='18%')
+with col6:
     pass
 
 
@@ -647,6 +651,20 @@ with st.container():
         # #fig = px.histogram(df, x="return", y="return")
         # st.plotly_chart(fig, theme="streamlit", use_container_width=True)
         # #fig.show()
+
+col1, col2, col3, col4 = st.columns((1, 1, 1, 3))
+
+with col1:
+    st.metric(label="Optimum RoAS at:", value='£1,030')
+
+with col2:
+    st.metric(label="Optimum RoI at:", value='£500')
+
+with col3:
+    st.metric(label="Maximum profit at:", value='£2,850')
+
+with col4:
+        pass
 
 
 @st.experimental_singleton
